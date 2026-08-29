@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useStore } from "../../store";
 import type { Exercise, Page } from "../../types";
+import SupabaseExerciseTest from "../../components/SupabaseExerciseTest";
 
 interface Props {
   navigate: (page: Page) => void;
@@ -284,6 +285,8 @@ export default function Library({ navigate }: Props) {
 
   return (
     <div>
+      <SupabaseExerciseTest />
+
       {viewingExercise && (
         <ExerciseModal exercise={viewingExercise} onClose={() => setViewingExercise(null)} />
       )}

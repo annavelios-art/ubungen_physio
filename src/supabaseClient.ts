@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Exercise } from "./types";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
@@ -26,4 +27,50 @@ export async function testSupabaseConnection(): Promise<boolean> {
   } finally {
     window.clearTimeout(timeout);
   }
+}
+
+interface ExerciseRow {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  instructions: string;
+  reps: number | null;
+  sets: number | null;
+  duration: number | null;
+  hold_time: number | null;
+  thumbnail_url: string | null;
+  video_url: string | null;
+  is_custom: boolean;
+  created_at: string;
+}
+
+export async function fetchPublishedExercises(): Promise<Exercise[]> {
+  if (!supabase) throw new Error("Supabase ist nicht eingerichtet.");
+
+  const { data, error } = await supabase
+    .from("exercises")
+    .select(
+      "id, title, category, description, instructions, reps, sets, duration, hold_time, thumbnail_url, video_url, is_custom, created_at",
+    )
+    .eq("is_published", true)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+
+  return ((data ?? []) as ExerciseRow[]).map((row) => ({
+    id: row.id,
+    title: row.title,
+    category: row.category,
+    description: row.description,
+    instructions: row.instructions,
+    reps: row.reps ?? undefined,
+    sets: row.sets ?? undefined,
+    duration: row.duration ?? undefined,
+    holdTime: row.hold_time ?? undefined,
+    thumbnailUrl: row.thumbnail_url ?? undefined,
+    videoUrl: row.video_url ?? undefined,
+    isCustom: row.is_custom,
+    createdAt: row.created_at,
+  }));
 }
