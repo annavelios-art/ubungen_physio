@@ -1,0 +1,10 @@
+{
+  "description": "This app enables physiotherapists to create personalized exercise programs from a library of video-based exercises, enhancing patient rehabilitation and engagement.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
