@@ -5,6 +5,8 @@ import SupabaseStatus from "../../components/SupabaseStatus";
 interface Props {
   currentPage: string;
   navigate: (page: Page) => void;
+  userEmail?: string;
+  onSignOut: () => void;
   children: ReactNode;
 }
 
@@ -38,7 +40,7 @@ const NAV_ITEMS = [
   },
 ] as const;
 
-export default function TherapistLayout({ currentPage, navigate, children }: Props) {
+export default function TherapistLayout({ currentPage, navigate, userEmail, onSignOut, children }: Props) {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Top bar */}
@@ -55,13 +57,22 @@ export default function TherapistLayout({ currentPage, navigate, children }: Pro
               className="text-xl font-medium"
               style={{ fontFamily: "'DM Serif Display', serif" }}
             >
-              Physiooptima Start
+              PhysioApp
             </span>
           </button>
 
           <div className="flex items-center gap-4">
             <SupabaseStatus />
-            <span className="text-sm text-slate-500 font-medium hidden md:block">Übungsverwaltung</span>
+            <span className="hidden text-sm font-medium text-slate-500 lg:block" title={userEmail}>
+              Angemeldet
+            </span>
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+            >
+              Abmelden
+            </button>
           </div>
         </div>
 

@@ -4,7 +4,11 @@ import { fetchPublishedExercises } from "../supabaseClient";
 
 type LoadState = "idle" | "loading" | "success" | "error";
 
-export default function SupabaseExerciseTest() {
+interface Props {
+  onLoaded: (exercises: Exercise[]) => void;
+}
+
+export default function SupabaseExerciseTest({ onLoaded }: Props) {
   const [state, setState] = useState<LoadState>("idle");
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [message, setMessage] = useState("");
@@ -16,9 +20,11 @@ export default function SupabaseExerciseTest() {
     try {
       const publishedExercises = await fetchPublishedExercises();
       setExercises(publishedExercises);
+      onLoaded(publishedExercises);
       setState("success");
     } catch (error) {
       setExercises([]);
+      onLoaded([]);
       setMessage(error instanceof Error ? error.message : "Unbekannter Fehler");
       setState("error");
     }

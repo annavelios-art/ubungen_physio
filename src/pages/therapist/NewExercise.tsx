@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useStore } from "../../store";
 import type { Exercise, Page } from "../../types";
+import { updateOnlineExercise } from "../../supabaseClient";
 
 interface Props {
   navigate: (page: Page) => void;
   editExerciseId?: string;
+  onlineExercise?: Exercise;
 }
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -16,10 +18,12 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-export default function NewExercise({ navigate, editExerciseId }: Props) {
+export default function NewExercise({ navigate, editExerciseId, onlineExercise }: Props) {
   const { exercises, categories, addExercise, updateExercise, addCategory } = useStore();
 
-  const editing = editExerciseId ? exercises.find((e) => e.id === editExerciseId) : undefined;
+  const localEditing = editExerciseId ? exercises.find((e) => e.id === editExerciseId) : undefined;
+  const editing = onlineExercise ?? localEditing;
+  const isOnlineEditing = Boolean(onlineExercise);
 
   const [title, setTitle] = useState(editing?.title ?? "");
   const [category, setCategory] = useState(editing?.category ?? categories[0]);
@@ -52,7 +56,7 @@ export default function NewExercise({ navigate, editExerciseId }: Props) {
       setThumbnailUrl(editing.thumbnailUrl);
       setVideoUrl(editing.videoUrl);
     }
-  }, [editExerciseId]);
+  }, [editing]);
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -79,6 +83,7 @@ export default function NewExercise({ navigate, editExerciseId }: Props) {
   const handleSave = async () => {
     if (!validate()) return;
     setSaving(true);
+    setErrors({});
 
     const data: Omit<Exercise, "id" | "createdAt"> = {
       title: title.trim(),
@@ -94,10 +99,23 @@ export default function NewExercise({ navigate, editExerciseId }: Props) {
       isCustom: editing?.isCustom ?? true,
     };
 
-    if (editing) {
-      updateExercise(editing.id, data);
-    } else {
-      addExercise(data);
+    try {
+      if (isOnlineEditing && editing) {
+        await updateOnlineExercise(editing.id, data);
+      } else if (editing) {
+        updateExercise(editing.id, data);
+      } else {
+        addExercise(data);
+      }
+    } catch (error) {
+      setErrors({
+        save:
+          error instanceof Error
+            ? `Speichern in Supabase fehlgeschlagen: ${error.message}`
+            : "Speichern in Supabase fehlgeschlagen.",
+      });
+      setSaving(false);
+      return;
     }
 
     setSaving(false);
@@ -124,6 +142,13 @@ export default function NewExercise({ navigate, editExerciseId }: Props) {
       <h1 className="text-2xl font-semibold text-slate-900 mb-6">
         {editing ? "Übung bearbeiten" : "Neue Übung erstellen"}
       </h1>
+
+      {isOnlineEditing && (
+        <div className="mb-5 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800">
+          <span className="font-medium">Online-Übung:</span> Änderungen werden direkt in Supabase gespeichert.
+          Bilder und Videos verbinden wir später über Supabase Storage.
+        </div>
+      )}
 
       <div className="space-y-5">
         {/* Title */}
@@ -186,7 +211,7 @@ export default function NewExercise({ navigate, editExerciseId }: Props) {
         </div>
 
         {/* Media Upload */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {!isOnlineEditing && <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Thumbnail */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Vorschaubild</label>
@@ -270,7 +295,7 @@ export default function NewExercise({ navigate, editExerciseId }: Props) {
               </button>
             )}
           </div>
-        </div>
+        </div>}
 
         {/* Description */}
         <div>
@@ -351,6 +376,9 @@ export default function NewExercise({ navigate, editExerciseId }: Props) {
         </div>
 
         {/* Actions */}
+        {errors.save && (
+          <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{errors.save}</div>
+        )}
         <div className="flex gap-3 pt-2">
           <button
             onClick={() => navigate("therapist/library")}

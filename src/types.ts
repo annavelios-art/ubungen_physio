@@ -24,10 +24,12 @@ export interface Program {
 
 export type Page =
   | "home"
+  | "therapist/login"
   | "therapist/library"
   | "therapist/programs"
   | "therapist/new-exercise"
   | { type: "therapist/edit-exercise"; exerciseId: string }
+  | { type: "therapist/edit-online-exercise"; exercise: Exercise }
   | "patient/access"
   | { type: "patient/view"; code: string };
 

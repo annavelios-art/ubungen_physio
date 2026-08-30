@@ -15,6 +15,7 @@ function formatDuration(seconds: number) {
 function ExerciseCard({
   exercise,
   selected,
+  readOnly = false,
   onToggle,
   onView,
   onEdit,
@@ -22,6 +23,7 @@ function ExerciseCard({
 }: {
   exercise: Exercise;
   selected: boolean;
+  readOnly?: boolean;
   onToggle: () => void;
   onView: () => void;
   onEdit: () => void;
@@ -52,22 +54,28 @@ function ExerciseCard({
             </div>
           )}
         </div>
-        {/* Selection checkbox */}
-        <button
-          onClick={onToggle}
-          className={`absolute top-2 left-2 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all shadow ${
-            selected
-              ? "bg-teal-600 border-teal-600 text-white"
-              : "bg-white/80 border-white hover:border-teal-400"
-          }`}
-          title={selected ? "Abwählen" : "Auswählen"}
-        >
-          {selected && (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          )}
-        </button>
+        {/* Selection checkbox / online marker */}
+        {readOnly ? (
+          <span className="absolute top-2 left-2 rounded-full bg-sky-600 px-2.5 py-1 text-xs font-medium text-white shadow">
+            Online
+          </span>
+        ) : (
+          <button
+            onClick={onToggle}
+            className={`absolute top-2 left-2 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all shadow ${
+              selected
+                ? "bg-teal-600 border-teal-600 text-white"
+                : "bg-white/80 border-white hover:border-teal-400"
+            }`}
+            title={selected ? "Abwählen" : "Auswählen"}
+          >
+            {selected && (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </button>
+        )}
         {/* Category badge */}
         <span className="absolute bottom-2 right-2 bg-white/90 text-teal-800 text-xs font-medium px-2 py-0.5 rounded-full">
           {exercise.category}
@@ -99,7 +107,26 @@ function ExerciseCard({
         </div>
 
         {/* Actions */}
-        {confirmDelete ? (
+        {readOnly ? (
+          <div className="flex gap-2">
+            <button
+              onClick={onView}
+              className="flex-1 bg-sky-50 text-sky-700 text-sm py-2 rounded-xl font-medium hover:bg-sky-100 transition-colors"
+            >
+              Ansehen
+            </button>
+            <button
+              onClick={onEdit}
+              className="bg-sky-50 p-2 text-sky-700 rounded-xl hover:bg-sky-100 transition-colors"
+              title="Online-Übung bearbeiten"
+              aria-label={`${exercise.title} in Supabase bearbeiten`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+          </div>
+        ) : confirmDelete ? (
           <div className="bg-red-50 rounded-xl p-3">
             <p className="text-sm text-red-700 font-medium mb-2">Übung wirklich löschen?</p>
             <div className="flex gap-2">
@@ -252,8 +279,14 @@ export default function Library({ navigate }: Props) {
   const [programName, setProgramName] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createdCode, setCreatedCode] = useState<string | null>(null);
+  const [onlineExercises, setOnlineExercises] = useState<Exercise[]>([]);
 
-  const filtered = exercises.filter((e) => {
+  const allExercises = [
+    ...exercises.map((exercise) => ({ exercise, readOnly: false })),
+    ...onlineExercises.map((exercise) => ({ exercise, readOnly: true })),
+  ];
+
+  const filtered = allExercises.filter(({ exercise: e }) => {
     const matchesCat = filterCategory === "Alle" || e.category === filterCategory;
     const matchesSearch =
       search === "" ||
@@ -285,7 +318,7 @@ export default function Library({ navigate }: Props) {
 
   return (
     <div>
-      <SupabaseExerciseTest />
+      <SupabaseExerciseTest onLoaded={setOnlineExercises} />
 
       {viewingExercise && (
         <ExerciseModal exercise={viewingExercise} onClose={() => setViewingExercise(null)} />
@@ -375,14 +408,21 @@ export default function Library({ navigate }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((exercise) => (
+          {filtered.map(({ exercise, readOnly }) => (
             <ExerciseCard
-              key={exercise.id}
+              key={`${readOnly ? "online" : "local"}-${exercise.id}`}
               exercise={exercise}
               selected={selectedIds.has(exercise.id)}
+              readOnly={readOnly}
               onToggle={() => toggleSelect(exercise.id)}
               onView={() => setViewingExercise(exercise)}
-              onEdit={() => navigate({ type: "therapist/edit-exercise", exerciseId: exercise.id })}
+              onEdit={() =>
+                navigate(
+                  readOnly
+                    ? { type: "therapist/edit-online-exercise", exercise }
+                    : { type: "therapist/edit-exercise", exerciseId: exercise.id },
+                )
+              }
               onDelete={() => deleteExercise(exercise.id)}
             />
           ))}

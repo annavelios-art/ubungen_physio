@@ -74,3 +74,30 @@ export async function fetchPublishedExercises(): Promise<Exercise[]> {
     createdAt: row.created_at,
   }));
 }
+
+export async function updateOnlineExercise(
+  id: string,
+  exercise: Omit<Exercise, "id" | "createdAt">,
+): Promise<void> {
+  if (!supabase) throw new Error("Supabase ist nicht eingerichtet.");
+
+  const { data, error } = await supabase
+    .from("exercises")
+    .update({
+      title: exercise.title,
+      category: exercise.category,
+      description: exercise.description,
+      instructions: exercise.instructions,
+      reps: exercise.reps ?? null,
+      sets: exercise.sets ?? null,
+      duration: exercise.duration ?? null,
+      hold_time: exercise.holdTime ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select("id")
+    .single();
+
+  if (error) throw error;
+  if (!data) throw new Error("Die Online-Übung wurde nicht gefunden.");
+}
