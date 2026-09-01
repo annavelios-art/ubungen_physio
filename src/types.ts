@@ -11,6 +11,8 @@ export interface Exercise {
   thumbnailUrl?: string;
   videoUrl?: string;
   isCustom: boolean;
+  isPublished?: boolean;
+  ownerId?: string;
   createdAt: string;
 }
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useStore } from "../../store";
 import type { Exercise, Page } from "../../types";
 import SupabaseExerciseTest from "../../components/SupabaseExerciseTest";
+import { deleteOnlineExercise } from "../../supabaseClient";
 
 interface Props {
   navigate: (page: Page) => void;
@@ -20,6 +21,7 @@ function ExerciseCard({
   onView,
   onEdit,
   onDelete,
+  deleting = false,
 }: {
   exercise: Exercise;
   selected: boolean;
@@ -27,7 +29,8 @@ function ExerciseCard({
   onToggle: () => void;
   onView: () => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onDelete: () => void | Promise<void>;
+  deleting?: boolean;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -56,8 +59,12 @@ function ExerciseCard({
         </div>
         {/* Selection checkbox / online marker */}
         {readOnly ? (
-          <span className="absolute top-2 left-2 rounded-full bg-sky-600 px-2.5 py-1 text-xs font-medium text-white shadow">
-            Online
+          <span
+            className={`absolute top-2 left-2 rounded-full px-2.5 py-1 text-xs font-medium text-white shadow ${
+              exercise.isPublished ? "bg-sky-600" : "bg-amber-500"
+            }`}
+          >
+            {exercise.isPublished ? "Online · veröffentlicht" : "Online · Entwurf"}
           </span>
         ) : (
           <button
@@ -107,7 +114,31 @@ function ExerciseCard({
         </div>
 
         {/* Actions */}
-        {readOnly ? (
+        {confirmDelete ? (
+          <div className="bg-red-50 rounded-xl p-3">
+            <p className="text-sm text-red-700 font-medium mb-2">
+              {readOnly
+                ? "Online-Übung wirklich löschen? Eigene Bilder und Videos werden ebenfalls entfernt."
+                : "Übung wirklich löschen?"}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={onDelete}
+                disabled={deleting}
+                className="flex-1 bg-red-600 text-white text-sm py-1.5 rounded-lg font-medium hover:bg-red-700 transition-colors disabled:cursor-wait disabled:opacity-60"
+              >
+                {deleting ? "Wird gelöscht …" : "Löschen"}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                className="flex-1 bg-white border border-slate-200 text-sm py-1.5 rounded-lg font-medium hover:bg-slate-50 transition-colors disabled:opacity-60"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        ) : readOnly ? (
           <div className="flex gap-2">
             <button
               onClick={onView}
@@ -125,24 +156,16 @@ function ExerciseCard({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </button>
-          </div>
-        ) : confirmDelete ? (
-          <div className="bg-red-50 rounded-xl p-3">
-            <p className="text-sm text-red-700 font-medium mb-2">Übung wirklich löschen?</p>
-            <div className="flex gap-2">
-              <button
-                onClick={onDelete}
-                className="flex-1 bg-red-600 text-white text-sm py-1.5 rounded-lg font-medium hover:bg-red-700 transition-colors"
-              >
-                Löschen
-              </button>
-              <button
-                onClick={() => setConfirmDelete(false)}
-                className="flex-1 bg-white border border-slate-200 text-sm py-1.5 rounded-lg font-medium hover:bg-slate-50 transition-colors"
-              >
-                Abbrechen
-              </button>
-            </div>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="bg-sky-50 p-2 text-red-500 rounded-xl hover:bg-red-50 transition-colors"
+              title="Online-Übung löschen"
+              aria-label={`${exercise.title} aus Supabase löschen`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
           </div>
         ) : (
           <div className="flex gap-2">
@@ -280,6 +303,11 @@ export default function Library({ navigate }: Props) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createdCode, setCreatedCode] = useState<string | null>(null);
   const [onlineExercises, setOnlineExercises] = useState<Exercise[]>([]);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [deleteMessage, setDeleteMessage] = useState<{
+    type: "error" | "warning";
+    text: string;
+  } | null>(null);
 
   const allExercises = [
     ...exercises.map((exercise) => ({ exercise, readOnly: false })),
@@ -316,9 +344,62 @@ export default function Library({ navigate }: Props) {
     navigator.clipboard.writeText(code);
   };
 
+  const handleDelete = async (exercise: Exercise, online: boolean) => {
+    setDeleteMessage(null);
+
+    if (!online) {
+      deleteExercise(exercise.id);
+      setSelectedIds((current) => {
+        const next = new Set(current);
+        next.delete(exercise.id);
+        return next;
+      });
+      return;
+    }
+
+    setDeletingIds((current) => new Set(current).add(exercise.id));
+    try {
+      const result = await deleteOnlineExercise(exercise.id);
+      setOnlineExercises((current) => current.filter((item) => item.id !== exercise.id));
+
+      if (result.mediaCleanupFailed) {
+        setDeleteMessage({
+          type: "warning",
+          text: "Die Übung wurde gelöscht. Mindestens eine Mediendatei konnte jedoch nicht automatisch entfernt werden.",
+        });
+      }
+    } catch (error) {
+      setDeleteMessage({
+        type: "error",
+        text:
+          error instanceof Error
+            ? `Löschen in Supabase fehlgeschlagen: ${error.message}`
+            : "Löschen in Supabase fehlgeschlagen.",
+      });
+    } finally {
+      setDeletingIds((current) => {
+        const next = new Set(current);
+        next.delete(exercise.id);
+        return next;
+      });
+    }
+  };
+
   return (
     <div>
-      <SupabaseExerciseTest onLoaded={setOnlineExercises} />
+      <SupabaseExerciseTest exercises={onlineExercises} onLoaded={setOnlineExercises} />
+
+      {deleteMessage && (
+        <div
+          className={`mb-5 rounded-xl p-3 text-sm ${
+            deleteMessage.type === "error"
+              ? "bg-red-50 text-red-700"
+              : "bg-amber-50 text-amber-800"
+          }`}
+        >
+          {deleteMessage.text}
+        </div>
+      )}
 
       {viewingExercise && (
         <ExerciseModal exercise={viewingExercise} onClose={() => setViewingExercise(null)} />
@@ -423,7 +504,8 @@ export default function Library({ navigate }: Props) {
                     : { type: "therapist/edit-exercise", exerciseId: exercise.id },
                 )
               }
-              onDelete={() => deleteExercise(exercise.id)}
+              onDelete={() => handleDelete(exercise, readOnly)}
+              deleting={deletingIds.has(exercise.id)}
             />
           ))}
         </div>
