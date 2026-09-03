@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useStore } from "../../store";
+import { fetchPatientProgramByCode } from "../../supabaseClient";
 import type { Page } from "../../types";
 
 interface Props {
@@ -8,23 +8,43 @@ interface Props {
 }
 
 export default function PatientAccess({ navigate, onBack }: Props) {
-  const { getProgramByCode } = useStore();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [checking, setChecking] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const formatCode = (value: string) => {
+    const normalized = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (normalized.length <= 10) {
+      const shortened = normalized.slice(0, 10);
+      return shortened.length > 5
+        ? `${shortened.slice(0, 5)}-${shortened.slice(5)}`
+        : shortened;
+    }
+    return normalized.slice(0, 32);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = code.trim().toUpperCase();
-    if (!trimmed) {
+    const normalized = code.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (normalized.length < 10) {
       setError("Bitte geben Sie Ihren Zugangscode ein.");
       return;
     }
-    const program = getProgramByCode(trimmed);
-    if (!program) {
-      setError("Dieser Code wurde nicht gefunden. Bitte prüfen Sie Ihren Zugangscode.");
-      return;
+
+    setChecking(true);
+    setError("");
+    try {
+      const program = await fetchPatientProgramByCode(code);
+      if (!program) {
+        setError("Dieser Code ist ungültig oder nicht mehr aktiv. Bitte prüfen Sie Ihre Eingabe.");
+        return;
+      }
+      navigate({ type: "patient/view", code, program });
+    } catch {
+      setError("Das Programm konnte gerade nicht geladen werden. Bitte versuchen Sie es erneut.");
+    } finally {
+      setChecking(false);
     }
-    navigate({ type: "patient/view", code: trimmed });
   };
 
   return (
@@ -66,11 +86,11 @@ export default function PatientAccess({ navigate, onBack }: Props) {
               type="text"
               value={code}
               onChange={(e) => {
-                setCode(e.target.value.toUpperCase());
+                setCode(formatCode(e.target.value));
                 setError("");
               }}
-              placeholder="z. B. AB1C2D"
-              maxLength={10}
+              placeholder="z. B. K7M4P-9QX2R"
+              maxLength={32}
               className={`w-full px-5 py-4 text-2xl font-mono font-bold tracking-widest text-center border-2 rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-400 transition-colors ${
                 error ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"
               }`}
@@ -84,9 +104,10 @@ export default function PatientAccess({ navigate, onBack }: Props) {
 
           <button
             type="submit"
-            className="w-full bg-teal-600 text-white py-4 rounded-2xl text-lg font-semibold hover:bg-teal-700 active:scale-[0.98] transition-all"
+            disabled={checking}
+            className="w-full bg-teal-600 text-white py-4 rounded-2xl text-lg font-semibold hover:bg-teal-700 active:scale-[0.98] transition-all disabled:cursor-wait disabled:opacity-60"
           >
-            Meine Übungen anzeigen
+            {checking ? "Programm wird geladen …" : "Meine Übungen anzeigen"}
           </button>
         </form>
       </div>

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useStore } from "../../store";
-import type { Exercise, Page } from "../../types";
+import type { Exercise, Page, PatientProgram } from "../../types";
 
 interface Props {
   code: string;
+  program: PatientProgram;
   navigate: (page: Page) => void;
 }
 
@@ -159,29 +159,8 @@ function ExerciseItem({ exercise, index }: { exercise: Exercise; index: number }
   );
 }
 
-export default function PatientView({ code, navigate }: Props) {
-  const { getProgramByCode, exercises } = useStore();
-  const program = getProgramByCode(code);
-
-  if (!program) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center">
-          <p className="text-xl text-slate-500 mb-4">Programm nicht gefunden.</p>
-          <button
-            onClick={() => navigate("patient/access")}
-            className="text-teal-600 underline"
-          >
-            Zurück zur Codeeingabe
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const programExercises = program.exerciseIds
-    .map((id) => exercises.find((e) => e.id === id))
-    .filter(Boolean) as Exercise[];
+export default function PatientView({ code, program, navigate }: Props) {
+  const programExercises = program.exercises;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -193,7 +172,7 @@ export default function PatientView({ code, navigate }: Props) {
               className="text-xl font-medium text-teal-900"
               style={{ fontFamily: "'DM Serif Display', serif" }}
             >
-              {program.name || "Ihr Übungsprogramm"}
+              Ihr Übungsprogramm
             </div>
             <div className="text-xs text-slate-400 font-mono">{code}</div>
           </div>

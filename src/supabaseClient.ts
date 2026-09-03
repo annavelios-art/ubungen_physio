@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Exercise } from "./types";
+import type { Exercise, PatientProgram, Program } from "./types";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
@@ -236,4 +236,157 @@ export function exerciseMediaPathFromUrl(url: string): string | null {
   const markerIndex = url.indexOf(marker);
   if (markerIndex === -1) return null;
   return decodeURIComponent(url.slice(markerIndex + marker.length));
+}
+
+interface PatientProgramRow {
+  id: string;
+  access_code: string;
+  expires_at: string;
+  is_active: boolean;
+  created_at: string;
+  program_exercises?: Array<{
+    exercise_id: string;
+    sort_order: number;
+  }>;
+}
+
+function mapPatientProgramRow(row: PatientProgramRow): Program {
+  const assignments = [...(row.program_exercises ?? [])].sort(
+    (a, b) => a.sort_order - b.sort_order,
+  );
+
+  return {
+    id: row.id,
+    accessCode: row.access_code,
+    exerciseIds: assignments.map((assignment) => assignment.exercise_id),
+    createdAt: row.created_at,
+    expiresAt: row.expires_at,
+    isActive: row.is_active,
+    isOnline: true,
+  };
+}
+
+export async function createOnlineProgram(exerciseIds: string[]): Promise<Program> {
+  if (!supabase) throw new Error("Supabase ist nicht eingerichtet.");
+
+  const uniqueExerciseIds = [...new Set(exerciseIds)];
+  if (uniqueExerciseIds.length === 0) {
+    throw new Error("Bitte mindestens eine veröffentlichte Online-Übung auswählen.");
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) throw new Error("Bitte erneut anmelden.");
+
+  const { data: allowedExercises, error: exerciseError } = await supabase
+    .from("exercises")
+    .select("id")
+    .eq("owner_id", userData.user.id)
+    .eq("is_published", true)
+    .in("id", uniqueExerciseIds);
+
+  if (exerciseError) throw exerciseError;
+  if ((allowedExercises ?? []).length !== uniqueExerciseIds.length) {
+    throw new Error("Mindestens eine ausgewählte Übung ist nicht veröffentlicht oder nicht mehr vorhanden.");
+  }
+
+  const { data: programData, error: programError } = await supabase
+    .from("patient_programs")
+    .insert({ owner_id: userData.user.id })
+    .select("id, access_code, expires_at, is_active, created_at")
+    .single();
+
+  if (programError) throw programError;
+
+  const program = programData as PatientProgramRow;
+  const assignments = uniqueExerciseIds.map((exerciseId, index) => ({
+    program_id: program.id,
+    exercise_id: exerciseId,
+    sort_order: index,
+  }));
+
+  const { error: assignmentError } = await supabase
+    .from("program_exercises")
+    .insert(assignments);
+
+  if (assignmentError) {
+    await supabase.from("patient_programs").delete().eq("id", program.id);
+    throw assignmentError;
+  }
+
+  return mapPatientProgramRow({
+    ...program,
+    program_exercises: assignments.map(({ exercise_id, sort_order }) => ({
+      exercise_id,
+      sort_order,
+    })),
+  });
+}
+
+export async function fetchOnlinePrograms(): Promise<Program[]> {
+  if (!supabase) throw new Error("Supabase ist nicht eingerichtet.");
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) throw new Error("Bitte erneut anmelden.");
+
+  const { data, error } = await supabase
+    .from("patient_programs")
+    .select(
+      "id, access_code, expires_at, is_active, created_at, program_exercises(exercise_id, sort_order)",
+    )
+    .eq("owner_id", userData.user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return ((data ?? []) as PatientProgramRow[]).map(mapPatientProgramRow);
+}
+
+export async function deleteOnlineProgram(id: string): Promise<void> {
+  if (!supabase) throw new Error("Supabase ist nicht eingerichtet.");
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) throw new Error("Bitte erneut anmelden.");
+
+  const { data, error } = await supabase
+    .from("patient_programs")
+    .delete()
+    .eq("id", id)
+    .eq("owner_id", userData.user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) throw new Error("Das Programm wurde nicht gefunden oder darf nicht gelöscht werden.");
+}
+
+export async function fetchPatientProgramByCode(
+  accessCode: string,
+): Promise<PatientProgram | null> {
+  if (!supabase) throw new Error("Die Online-Verbindung ist nicht eingerichtet.");
+
+  const { data, error } = await supabase.rpc("get_patient_program", {
+    p_access_code: accessCode,
+  });
+
+  if (error) throw error;
+  if (!data || typeof data !== "object") return null;
+
+  const raw = data as {
+    programId?: unknown;
+    expiresAt?: unknown;
+    exercises?: unknown;
+  };
+
+  if (
+    typeof raw.programId !== "string" ||
+    typeof raw.expiresAt !== "string" ||
+    !Array.isArray(raw.exercises)
+  ) {
+    return null;
+  }
+
+  return {
+    programId: raw.programId,
+    expiresAt: raw.expiresAt,
+    exercises: raw.exercises as Exercise[],
+  };
 }

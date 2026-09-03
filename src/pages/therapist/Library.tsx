@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useStore } from "../../store";
 import type { Exercise, Page } from "../../types";
 import SupabaseExerciseTest from "../../components/SupabaseExerciseTest";
-import { deleteOnlineExercise } from "../../supabaseClient";
+import { createOnlineProgram, deleteOnlineExercise } from "../../supabaseClient";
 
 interface Props {
   navigate: (page: Page) => void;
@@ -17,6 +17,7 @@ function ExerciseCard({
   exercise,
   selected,
   readOnly = false,
+  selectable = true,
   onToggle,
   onView,
   onEdit,
@@ -26,6 +27,7 @@ function ExerciseCard({
   exercise: Exercise;
   selected: boolean;
   readOnly?: boolean;
+  selectable?: boolean;
   onToggle: () => void;
   onView: () => void;
   onEdit: () => void;
@@ -57,24 +59,16 @@ function ExerciseCard({
             </div>
           )}
         </div>
-        {/* Selection checkbox / online marker */}
-        {readOnly ? (
-          <span
-            className={`absolute top-2 left-2 rounded-full px-2.5 py-1 text-xs font-medium text-white shadow ${
-              exercise.isPublished ? "bg-sky-600" : "bg-amber-500"
-            }`}
-          >
-            {exercise.isPublished ? "Online · veröffentlicht" : "Online · Entwurf"}
-          </span>
-        ) : (
+        {/* Selection checkbox / source marker */}
+        {selectable ? (
           <button
             onClick={onToggle}
             className={`absolute top-2 left-2 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all shadow ${
               selected
                 ? "bg-teal-600 border-teal-600 text-white"
-                : "bg-white/80 border-white hover:border-teal-400"
+                : "bg-white/90 border-white hover:border-teal-400"
             }`}
-            title={selected ? "Abwählen" : "Auswählen"}
+            title={selected ? "Abwählen" : "Für das Patientenprogramm auswählen"}
           >
             {selected && (
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -82,6 +76,19 @@ function ExerciseCard({
               </svg>
             )}
           </button>
+        ) : (
+          <span
+            className={`absolute top-2 left-2 rounded-full px-2.5 py-1 text-xs font-medium text-white shadow ${
+              readOnly ? "bg-amber-500" : "bg-slate-500"
+            }`}
+          >
+            {readOnly ? "Online · Entwurf" : "Lokal"}
+          </span>
+        )}
+        {readOnly && exercise.isPublished && (
+          <span className="absolute top-2 right-2 rounded-full bg-sky-600 px-2.5 py-1 text-xs font-medium text-white shadow">
+            Online
+          </span>
         )}
         {/* Category badge */}
         <span className="absolute bottom-2 right-2 bg-white/90 text-teal-800 text-xs font-medium px-2 py-0.5 rounded-full">
@@ -294,14 +301,15 @@ function ExerciseModal({
 }
 
 export default function Library({ navigate }: Props) {
-  const { exercises, categories, deleteExercise, addProgram } = useStore();
+  const { exercises, categories, deleteExercise } = useStore();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [filterCategory, setFilterCategory] = useState<string>("Alle");
   const [search, setSearch] = useState("");
   const [viewingExercise, setViewingExercise] = useState<Exercise | null>(null);
-  const [programName, setProgramName] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createdCode, setCreatedCode] = useState<string | null>(null);
+  const [creatingProgram, setCreatingProgram] = useState(false);
+  const [programError, setProgramError] = useState<string | null>(null);
   const [onlineExercises, setOnlineExercises] = useState<Exercise[]>([]);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [deleteMessage, setDeleteMessage] = useState<{
@@ -332,12 +340,24 @@ export default function Library({ navigate }: Props) {
     });
   };
 
-  const handleCreateProgram = () => {
-    const program = addProgram(Array.from(selectedIds), programName || undefined);
-    setCreatedCode(program.accessCode);
-    setSelectedIds(new Set());
-    setProgramName("");
-    setShowCreateModal(false);
+  const handleCreateProgram = async () => {
+    setProgramError(null);
+    setCreatingProgram(true);
+
+    try {
+      const program = await createOnlineProgram(Array.from(selectedIds));
+      setCreatedCode(program.accessCode);
+      setSelectedIds(new Set());
+      setShowCreateModal(false);
+    } catch (error) {
+      setProgramError(
+        error instanceof Error
+          ? `Programm konnte nicht gespeichert werden: ${error.message}`
+          : "Programm konnte nicht in Supabase gespeichert werden.",
+      );
+    } finally {
+      setCreatingProgram(false);
+    }
   };
 
   const copyCode = (code: string) => {
@@ -398,6 +418,12 @@ export default function Library({ navigate }: Props) {
           }`}
         >
           {deleteMessage.text}
+        </div>
+      )}
+
+      {programError && !showCreateModal && (
+        <div className="mb-5 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+          {programError}
         </div>
       )}
 
@@ -462,6 +488,11 @@ export default function Library({ navigate }: Props) {
         )}
       </div>
 
+      <p className="-mt-2 mb-5 text-xs text-slate-500">
+        Für Patientenprogramme können veröffentlichte Online-Übungen mit dem Kreis markiert werden.
+        Lokale Beispiele und Entwürfe bleiben ausgeschlossen.
+      </p>
+
       {/* Category filter */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-5">
         {["Alle", ...categories].map((cat) => (
@@ -495,6 +526,7 @@ export default function Library({ navigate }: Props) {
               exercise={exercise}
               selected={selectedIds.has(exercise.id)}
               readOnly={readOnly}
+              selectable={readOnly && Boolean(exercise.isPublished)}
               onToggle={() => toggleSelect(exercise.id)}
               onView={() => setViewingExercise(exercise)}
               onEdit={() =>
@@ -517,32 +549,31 @@ export default function Library({ navigate }: Props) {
           <div className="bg-white rounded-3xl w-full max-w-sm p-6">
             <h2 className="text-xl font-semibold text-slate-900 mb-1">Programm erstellen</h2>
             <p className="text-sm text-slate-500 mb-5">
-              {selectedIds.size} Übung{selectedIds.size !== 1 ? "en" : ""} ausgewählt
+              {selectedIds.size} veröffentlichte Online-Übung
+              {selectedIds.size !== 1 ? "en" : ""} ausgewählt. Der Zugang ist ein Jahr gültig.
             </p>
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Bezeichnung <span className="text-slate-400 font-normal">(optional)</span>
-              </label>
-              <input
-                type="text"
-                placeholder="z. B. Morgenroutine HWS, Rücken-Programm ..."
-                value={programName}
-                onChange={(e) => setProgramName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
-              />
-            </div>
+            {programError && (
+              <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+                {programError}
+              </div>
+            )}
             <div className="flex gap-3">
               <button
-                onClick={() => setShowCreateModal(false)}
-                className="flex-1 border border-slate-200 text-slate-700 py-2.5 rounded-xl font-medium hover:bg-slate-50 transition-colors"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setProgramError(null);
+                }}
+                disabled={creatingProgram}
+                className="flex-1 border border-slate-200 text-slate-700 py-2.5 rounded-xl font-medium hover:bg-slate-50 transition-colors disabled:opacity-60"
               >
                 Abbrechen
               </button>
               <button
                 onClick={handleCreateProgram}
-                className="flex-1 bg-teal-600 text-white py-2.5 rounded-xl font-medium hover:bg-teal-700 transition-colors"
+                disabled={creatingProgram}
+                className="flex-1 bg-teal-600 text-white py-2.5 rounded-xl font-medium hover:bg-teal-700 transition-colors disabled:cursor-wait disabled:opacity-60"
               >
-                Erstellen
+                {creatingProgram ? "Wird gespeichert …" : "Online erstellen"}
               </button>
             </div>
           </div>

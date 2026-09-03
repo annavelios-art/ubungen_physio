@@ -22,6 +22,15 @@ export interface Program {
   accessCode: string;
   exerciseIds: string[];
   createdAt: string;
+  expiresAt?: string;
+  isActive?: boolean;
+  isOnline?: boolean;
+}
+
+export interface PatientProgram {
+  programId: string;
+  expiresAt: string;
+  exercises: Exercise[];
 }
 
 export type Page =
@@ -33,7 +42,7 @@ export type Page =
   | { type: "therapist/edit-exercise"; exerciseId: string }
   | { type: "therapist/edit-online-exercise"; exercise: Exercise }
   | "patient/access"
-  | { type: "patient/view"; code: string };
+  | { type: "patient/view"; code: string; program: PatientProgram };
 
 export const DEFAULT_CATEGORIES = [
   "Halswirbelsäule",

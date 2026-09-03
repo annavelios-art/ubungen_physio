@@ -87,7 +87,7 @@ function AppContent() {
   }
 
   if (typeof page === "object" && page.type === "patient/view") {
-    return <PatientView code={page.code} navigate={navigate} />;
+    return <PatientView code={page.code} program={page.program} navigate={navigate} />;
   }
 
   if (
