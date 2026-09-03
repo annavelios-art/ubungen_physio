@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "../../store";
 import type { Exercise, Page } from "../../types";
-import SupabaseExerciseTest from "../../components/SupabaseExerciseTest";
-import { createOnlineProgram, deleteOnlineExercise } from "../../supabaseClient";
+import {
+  createOnlineProgram,
+  deleteOnlineExercise,
+  fetchOnlineExercises,
+} from "../../supabaseClient";
 
 interface Props {
   navigate: (page: Page) => void;
@@ -311,11 +314,44 @@ export default function Library({ navigate }: Props) {
   const [creatingProgram, setCreatingProgram] = useState(false);
   const [programError, setProgramError] = useState<string | null>(null);
   const [onlineExercises, setOnlineExercises] = useState<Exercise[]>([]);
+  const [onlineLoading, setOnlineLoading] = useState(true);
+  const [onlineLoadError, setOnlineLoadError] = useState<string | null>(null);
+  const [onlineReload, setOnlineReload] = useState(0);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [deleteMessage, setDeleteMessage] = useState<{
     type: "error" | "warning";
     text: string;
   } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadOnlineExercises = async () => {
+      setOnlineLoading(true);
+      setOnlineLoadError(null);
+
+      try {
+        const loadedExercises = await fetchOnlineExercises();
+        if (!cancelled) setOnlineExercises(loadedExercises);
+      } catch (error) {
+        if (!cancelled) {
+          setOnlineLoadError(
+            error instanceof Error
+              ? error.message
+              : "Online-Übungen konnten nicht geladen werden.",
+          );
+        }
+      } finally {
+        if (!cancelled) setOnlineLoading(false);
+      }
+    };
+
+    void loadOnlineExercises();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [onlineReload]);
 
   const allExercises = [
     ...exercises.map((exercise) => ({ exercise, readOnly: false })),
@@ -407,7 +443,24 @@ export default function Library({ navigate }: Props) {
 
   return (
     <div>
-      <SupabaseExerciseTest exercises={onlineExercises} onLoaded={setOnlineExercises} />
+      {onlineLoading && (
+        <div className="mb-5 rounded-xl bg-teal-50 p-3 text-sm text-teal-700">
+          Online-Übungen werden geladen …
+        </div>
+      )}
+
+      {onlineLoadError && (
+        <div className="mb-5 flex flex-col gap-3 rounded-xl bg-red-50 p-3 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between">
+          <span>Online-Übungen konnten nicht geladen werden: {onlineLoadError}</span>
+          <button
+            type="button"
+            onClick={() => setOnlineReload((value) => value + 1)}
+            className="whitespace-nowrap rounded-lg bg-white px-3 py-1.5 font-medium text-red-700 shadow-sm hover:bg-red-100"
+          >
+            Erneut versuchen
+          </button>
+        </div>
+      )}
 
       {deleteMessage && (
         <div
