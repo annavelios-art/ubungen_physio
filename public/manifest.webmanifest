@@ -1,6 +1,7 @@
 {
   "name": "Physiooptima Übungen",
   "short_name": "Physiooptima",
+  "id": "/",
   "description": "Individuelle physiotherapeutische Übungsprogramme",
   "lang": "de",
   "start_url": "/",

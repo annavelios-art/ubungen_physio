@@ -9,7 +9,7 @@ export default function Home({ onTherapist, onPatient }: Props) {
       {/* Header */}
       <header className="px-6 pt-10 pb-4 text-center">
         <div className="inline-flex items-center gap-2 mb-4">
-          <span className="text-3xl">🫁</span>
+          <span className="text-3xl">o</span>
         </div>
         <h1
           className="text-4xl md:text-5xl text-teal-900 mb-2"
