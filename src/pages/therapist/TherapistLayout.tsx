@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Page } from "../../types";
 import SupabaseStatus from "../../components/SupabaseStatus";
+import LegalLinks from "../../components/LegalLinks";
 
 interface Props {
   currentPage: string;
@@ -54,8 +55,7 @@ export default function TherapistLayout({ currentPage, navigate, userEmail, onSi
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
             <span
-              className="text-xl font-medium"
-              style={{ fontFamily: "'DM Serif Display', serif" }}
+              className="font-display text-xl font-medium"
             >
               PhysioApp
             </span>
@@ -102,6 +102,9 @@ export default function TherapistLayout({ currentPage, navigate, userEmail, onSi
 
       {/* Content */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">{children}</main>
+      <footer className="px-4 pb-6 pt-2">
+        <LegalLinks navigate={navigate} />
+      </footer>
     </div>
   );
 }

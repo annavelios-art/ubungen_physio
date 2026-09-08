@@ -39,6 +39,8 @@ export type Page =
   | "therapist/library"
   | "therapist/programs"
   | "therapist/new-exercise"
+  | "legal/imprint"
+  | "legal/privacy"
   | { type: "therapist/edit-exercise"; exerciseId: string }
   | { type: "therapist/edit-online-exercise"; exercise: Exercise }
   | "patient/access"

@@ -13,8 +13,6 @@ const SAMPLE_EXERCISES: Exercise[] = [
     reps: 10,
     sets: 3,
     holdTime: 5,
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1660739270492-6b79793ed992?w=400&h=280&fit=crop&auto=format",
     isCustom: false,
     createdAt: "2025-01-01T10:00:00Z",
   },
@@ -27,8 +25,6 @@ const SAMPLE_EXERCISES: Exercise[] = [
       "Stehen oder sitzen Sie aufrecht. Führen Sie beide Schultern langsam in großen Kreisen nach hinten. Atmen Sie dabei gleichmäßig. Führen Sie anschließend die Kreise in die entgegengesetzte Richtung aus.",
     reps: 10,
     sets: 2,
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1649751361457-01d3a696c7e6?w=400&h=280&fit=crop&auto=format",
     isCustom: false,
     createdAt: "2025-01-01T10:00:00Z",
   },
@@ -41,8 +37,6 @@ const SAMPLE_EXERCISES: Exercise[] = [
       "Begeben Sie sich in den Vierfüßlerstand: Hände unter den Schultern, Knie unter den Hüften. Runden Sie beim Ausatmen die gesamte Wirbelsäule nach oben (Katze). Beim Einatmen lassen Sie den Bauch sinken und heben den Kopf leicht an (Kuh). Führen Sie die Bewegung fließend aus.",
     reps: 10,
     sets: 2,
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?w=400&h=280&fit=crop&auto=format",
     isCustom: false,
     createdAt: "2025-01-01T10:00:00Z",
   },
@@ -56,8 +50,6 @@ const SAMPLE_EXERCISES: Exercise[] = [
     reps: 15,
     sets: 3,
     holdTime: 5,
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1607914660217-754fdd90041d?w=400&h=280&fit=crop&auto=format",
     isCustom: false,
     createdAt: "2025-01-01T10:00:00Z",
   },
@@ -70,8 +62,6 @@ const SAMPLE_EXERCISES: Exercise[] = [
       "Stehen Sie hüftbreit, Hände an den Hüften. Beschreiben Sie mit dem Becken langsam große Kreise – erst im Uhrzeigersinn, dann gegen den Uhrzeigersinn. Halten Sie den Oberkörper möglichst ruhig.",
     reps: 10,
     sets: 2,
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1692372372810-c848c9cca1c5?w=400&h=280&fit=crop&auto=format",
     isCustom: false,
     createdAt: "2025-01-01T10:00:00Z",
   },
@@ -84,8 +74,6 @@ const SAMPLE_EXERCISES: Exercise[] = [
       "Stehen Sie mit dem Rücken zur Wand, Füße ca. 30 cm von der Wand entfernt. Gleiten Sie langsam an der Wand nach unten, bis die Knie etwa 90° gebeugt sind. Halten Sie die Position. Drücken Sie sich wieder nach oben und wiederholen Sie die Übung.",
     sets: 3,
     holdTime: 30,
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1540206276207-3af25c08abc4?w=400&h=280&fit=crop&auto=format",
     isCustom: false,
     createdAt: "2025-01-01T10:00:00Z",
   },
@@ -98,8 +86,6 @@ const SAMPLE_EXERCISES: Exercise[] = [
       "Stehen Sie aufrecht neben einer Wand (Sicherheit). Heben Sie ein Bein leicht an, sodass Sie auf dem anderen Bein balancieren. Halten Sie den Blick auf einen festen Punkt. Wechseln Sie nach der angegebenen Zeit das Bein.",
     sets: 3,
     holdTime: 20,
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1561049501-e1f96bdd98fd?w=400&h=280&fit=crop&auto=format",
     isCustom: false,
     createdAt: "2025-01-01T10:00:00Z",
   },
@@ -112,8 +98,6 @@ const SAMPLE_EXERCISES: Exercise[] = [
       "Stehen Sie mit einem Abstand von ca. 50 cm vor einer Wand. Legen Sie die Hände schulterbreit an der Wand ab. Beugen Sie die Arme, bis die Nase fast die Wand berührt, und drücken Sie sich wieder zurück. Halten Sie den Körper gerade wie ein Brett.",
     reps: 10,
     sets: 3,
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=280&fit=crop&auto=format",
     isCustom: false,
     createdAt: "2025-01-01T10:00:00Z",
   },
@@ -126,8 +110,6 @@ const SAMPLE_EXERCISES: Exercise[] = [
       "Stellen Sie sich in eine Türöffnung. Legen Sie beide Unterarme an den Türrahmen (Ellenbogen auf Schulterhöhe). Lehnen Sie sich langsam nach vorne, bis Sie eine Dehnung in der Brust spüren. Halten Sie die Dehnung und atmen Sie tief.",
     sets: 3,
     holdTime: 30,
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1560233075-4c1e2007908e?w=400&h=280&fit=crop&auto=format",
     isCustom: false,
     createdAt: "2025-01-01T10:00:00Z",
   },
@@ -140,8 +122,6 @@ const SAMPLE_EXERCISES: Exercise[] = [
       "Legen Sie sich auf den Rücken oder setzen Sie sich bequem hin. Legen Sie eine Hand auf den Bauch, eine auf die Brust. Atmen Sie langsam durch die Nase ein – der Bauch hebt sich, die Brust bleibt ruhig. Atmen Sie durch den leicht geöffneten Mund aus. Spüren Sie, wie der Bauch sinkt.",
     sets: 1,
     duration: 300,
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1706353399656-210cca727a33?w=400&h=280&fit=crop&auto=format",
     isCustom: false,
     createdAt: "2025-01-01T10:00:00Z",
   },
@@ -154,8 +134,6 @@ const SAMPLE_EXERCISES: Exercise[] = [
       "Sitzen Sie aufrecht auf einem Stuhl, Arme vor der Brust verschränkt. Drehen Sie den Oberkörper langsam nach rechts, so weit es schmerzfrei möglich ist. Kehren Sie zur Mitte zurück und drehen Sie dann nach links. Achten Sie darauf, dass die Hüften auf dem Stuhl bleiben.",
     reps: 8,
     sets: 3,
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1648638810948-f3bf2cccdde9?w=400&h=280&fit=crop&auto=format",
     isCustom: false,
     createdAt: "2025-01-01T10:00:00Z",
   },
@@ -168,8 +146,6 @@ const SAMPLE_EXERCISES: Exercise[] = [
       "Stehen Sie aufrecht, halten Sie sich bei Bedarf leicht an einer Wand fest. Heben Sie beide Fußspitzen vom Boden ab, sodass Sie nur auf den Fersen stehen. Halten Sie die Position kurz, dann senken Sie die Zehen wieder ab. Alternativ können Sie auf den Fersen einige Schritte gehen.",
     reps: 15,
     sets: 3,
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1645005512964-5057008b4425?w=400&h=280&fit=crop&auto=format",
     isCustom: false,
     createdAt: "2025-01-01T10:00:00Z",
   },

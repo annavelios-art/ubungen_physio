@@ -1,9 +1,13 @@
+import LegalLinks from "../components/LegalLinks";
+import type { Page } from "../types";
+
 interface Props {
+  navigate: (page: Page) => void
   onTherapist: () => void
   onPatient: () => void
 }
 
-export default function Home({ onTherapist, onPatient }: Props) {
+export default function Home({ navigate, onTherapist, onPatient }: Props) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 flex flex-col">
       {/* Header */}
@@ -11,10 +15,7 @@ export default function Home({ onTherapist, onPatient }: Props) {
         <div className="inline-flex items-center gap-2 mb-4">
           <span className="text-3xl">o</span>
         </div>
-        <h1
-          className="text-4xl md:text-5xl text-teal-900 mb-2"
-          style={{ fontFamily: "'DM Serif Display', serif" }}
-        >
+        <h1 className="font-display text-4xl md:text-5xl text-teal-900 mb-2">
           Physiooptima Übungen
         </h1>
         <p className="text-lg text-teal-700 font-light max-w-md mx-auto">
@@ -120,8 +121,8 @@ export default function Home({ onTherapist, onPatient }: Props) {
         </div>
       </main>
 
-      <footer className="text-center pb-8 text-sm text-slate-400">
-        Physiooptima – Übungsprogramm-Verwaltung
+      <footer className="px-4 pb-8">
+        <LegalLinks navigate={navigate} />
       </footer>
     </div>
   )

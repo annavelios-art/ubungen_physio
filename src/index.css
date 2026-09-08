@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap');
 @import 'tailwindcss';
 
 html,
@@ -8,13 +7,13 @@ body,
 }
 
 @theme inline {
-  --font-sans: 'Outfit', sans-serif;
-  --font-display: 'DM Serif Display', serif;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: Georgia, 'Times New Roman', serif;
   --color-teal-950: #042f2e;
 }
 
 body {
-  font-family: 'Outfit', sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background-color: #f0faf8;
   color: #0f172a;
   -webkit-font-smoothing: antialiased;

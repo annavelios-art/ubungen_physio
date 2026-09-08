@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { fetchPatientProgramByCode } from "../../supabaseClient";
 import type { Page } from "../../types";
+import LegalLinks from "../../components/LegalLinks";
 
 interface Props {
   navigate: (page: Page) => void;
@@ -48,7 +49,7 @@ export default function PatientAccess({ navigate, onBack }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 flex flex-col items-center justify-center px-4 py-24">
       <button
         onClick={onBack}
         className="absolute top-6 left-6 flex items-center gap-2 text-teal-700 hover:text-teal-900 transition-colors text-sm font-medium"
@@ -66,10 +67,7 @@ export default function PatientAccess({ navigate, onBack }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <h1
-            className="text-3xl text-teal-900 mb-2"
-            style={{ fontFamily: "'DM Serif Display', serif" }}
-          >
+          <h1 className="font-display text-3xl text-teal-900 mb-2">
             Mein Übungsprogramm
           </h1>
           <p className="text-slate-500 text-base leading-relaxed">
@@ -111,6 +109,9 @@ export default function PatientAccess({ navigate, onBack }: Props) {
           </button>
         </form>
       </div>
+      <footer className="absolute bottom-6 left-4 right-4">
+        <LegalLinks navigate={navigate} />
+      </footer>
     </div>
   );
 }

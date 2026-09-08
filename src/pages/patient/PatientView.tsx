@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Exercise, Page, PatientProgram } from "../../types";
+import LegalLinks from "../../components/LegalLinks";
 
 interface Props {
   code: string;
@@ -169,8 +170,7 @@ export default function PatientView({ code, program, navigate }: Props) {
         <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
           <div>
             <div
-              className="text-xl font-medium text-teal-900"
-              style={{ fontFamily: "'DM Serif Display', serif" }}
+              className="font-display text-xl font-medium text-teal-900"
             >
               Ihr Übungsprogramm
             </div>
@@ -211,6 +211,7 @@ export default function PatientView({ code, program, navigate }: Props) {
         <p className="text-center text-xs text-slate-300 mt-8">
           Bei Beschwerden wenden Sie sich bitte an Ihre Therapeutin / Ihren Therapeuten.
         </p>
+        <LegalLinks navigate={navigate} className="mt-5 pb-4" />
       </main>
     </div>
   );

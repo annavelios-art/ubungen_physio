@@ -10,6 +10,7 @@ import NewExercise from "./pages/therapist/NewExercise";
 import PatientAccess from "./pages/patient/PatientAccess";
 import PatientView from "./pages/patient/PatientView";
 import TherapistLogin from "./pages/therapist/TherapistLogin";
+import LegalPage from "./pages/LegalPage";
 import { supabase } from "./supabaseClient";
 
 function pageId(page: Page): string {
@@ -69,8 +70,18 @@ function AppContent() {
   if (page === "home") {
     return (
       <Home
+        navigate={navigate}
         onTherapist={() => navigate("therapist/library")}
         onPatient={() => navigate("patient/access")}
+      />
+    );
+  }
+
+  if (page === "legal/imprint" || page === "legal/privacy") {
+    return (
+      <LegalPage
+        kind={page === "legal/imprint" ? "imprint" : "privacy"}
+        navigate={navigate}
       />
     );
   }
