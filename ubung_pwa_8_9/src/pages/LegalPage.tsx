@@ -97,30 +97,29 @@ function Privacy() {
           </p>
         </Section>
 
-        <Section title="3. Bereitstellung über Cloudflare">
+        <Section title="3. Bereitstellung über Vercel">
           <p>
-            Die Anwendung wird über Cloudflare bereitgestellt. Anbieter ist Cloudflare, Inc.,
-            101 Townsend Street, San Francisco, CA 94107, USA. Beim Aufruf können technisch
-            notwendige Verbindungsdaten verarbeitet werden, insbesondere IP-Adresse,
-            angeforderte Adresse, Datum und Uhrzeit sowie Angaben zum verwendeten Gerät und
-            Browser.
+            Die Anwendung wird über Vercel bereitgestellt. Anbieter ist Vercel Inc.,
+            440 N Barranca Avenue #4133, Covina, CA 91723, USA. Beim Aufruf können technisch
+            notwendige Verbindungsdaten verarbeitet werden, etwa IP-Adresse, Datum und Uhrzeit,
+            angeforderte Dateien, Browser- und Betriebssystemangaben sowie Protokoll- und
+            Diagnosedaten.
           </p>
           <p>
             Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Das berechtigte Interesse liegt in
-            einer sicheren und funktionsfähigen Bereitstellung. Cloudflare verarbeitet diese
-            Daten im Rahmen der Bereitstellung als Auftragsverarbeiter. Soweit Daten in
-            Drittländer übermittelt werden, gelten die im Auftragsverarbeitungsvertrag
-            vorgesehenen Garantien, insbesondere die EU-Standardvertragsklauseln.
+            einer sicheren und funktionsfähigen Bereitstellung. Vercel verarbeitet Daten als
+            Auftragsverarbeiter. Soweit Daten in Drittländer übermittelt werden, werden geeignete
+            Garantien, insbesondere EU-Standardvertragsklauseln, eingesetzt.
           </p>
           <p>
             Weitere Informationen:{" "}
             <a
               className="break-all text-teal-700 underline underline-offset-2"
-              href="https://www.cloudflare.com/privacypolicy/"
+              href="https://vercel.com/legal/privacy-notice"
               target="_blank"
               rel="noreferrer"
             >
-              Datenschutzhinweise von Cloudflare
+              Datenschutzhinweise von Vercel
             </a>
           </p>
         </Section>
