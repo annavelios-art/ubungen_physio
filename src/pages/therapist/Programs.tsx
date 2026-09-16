@@ -5,6 +5,7 @@ import {
   fetchOnlineExercises,
   fetchOnlinePrograms,
   renewOnlineProgram,
+  updateOnlineProgramExercises,
 } from "../../supabaseClient"
 
 function formatDate(iso: string) {
@@ -32,6 +33,10 @@ export default function Programs() {
   const [confirmRenewId, setConfirmRenewId] = useState<string | null>(null)
   const [renewingId, setRenewingId] = useState<string | null>(null)
   const [renewedId, setRenewedId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editExerciseIds, setEditExerciseIds] = useState<string[]>([])
+  const [savingId, setSavingId] = useState<string | null>(null)
+  const [savedId, setSavedId] = useState<string | null>(null)
 
   const loadPrograms = async () => {
     setLoading(true)
@@ -84,6 +89,74 @@ export default function Programs() {
       )
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  const startEditing = (program: Program) => {
+    setEditingId(program.id)
+    setEditExerciseIds([...program.exerciseIds])
+    setExpandedId(program.id)
+    setConfirmDeleteId(null)
+    setConfirmRenewId(null)
+  }
+
+  const cancelEditing = () => {
+    setEditingId(null)
+    setEditExerciseIds([])
+  }
+
+  const toggleEditExercise = (exerciseId: string) => {
+    setEditExerciseIds((current) =>
+      current.includes(exerciseId)
+        ? current.filter((id) => id !== exerciseId)
+        : [...current, exerciseId],
+    )
+  }
+
+  const moveEditExercise = (exerciseId: string, direction: -1 | 1) => {
+    setEditExerciseIds((current) => {
+      const index = current.indexOf(exerciseId)
+      const nextIndex = index + direction
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current
+      const next = [...current]
+      ;[next[index], next[nextIndex]] = [next[nextIndex], next[index]]
+      return next
+    })
+  }
+
+  const handleSaveExercises = async (program: Program) => {
+    if (
+      editExerciseIds.length === 0 &&
+      !window.confirm(
+        "Das Programm enthält danach keine Übungen mehr. Wirklich speichern?",
+      )
+    ) {
+      return
+    }
+
+    setSavingId(program.id)
+    setError(null)
+    try {
+      await updateOnlineProgramExercises(program.id, editExerciseIds)
+      setPrograms((current) =>
+        current.map((item) =>
+          item.id === program.id
+            ? { ...item, exerciseIds: [...editExerciseIds] }
+            : item,
+        ),
+      )
+      setEditingId(null)
+      setEditExerciseIds([])
+      setSavedId(program.id)
+      window.setTimeout(() => setSavedId(null), 2500)
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? `Programm konnte nicht gespeichert werden: ${saveError.message}`
+          : "Programm konnte nicht gespeichert werden.",
+      )
+    } finally {
+      setSavingId(null)
     }
   }
 
@@ -179,6 +252,10 @@ export default function Programs() {
               program.expiresAt && new Date(program.expiresAt) < new Date(),
             )
             const isConfirmingRenew = confirmRenewId === program.id
+            const isEditing = editingId === program.id
+            const publishedExercises = exercises.filter(
+              (exercise) => exercise.isPublished,
+            )
 
             return (
               <div
@@ -221,6 +298,11 @@ export default function Programs() {
                           ✓ Zahlung erfasst – um 6 Monate verlängert
                         </div>
                       )}
+                      {savedId === program.id && (
+                        <div className="mt-1 text-xs font-medium text-teal-700">
+                          ✓ Übungsprogramm aktualisiert
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -260,6 +342,15 @@ export default function Programs() {
                     </button>
 
                     <div className="flex flex-wrap items-center justify-end gap-2">
+                      {!isEditing && (
+                        <button
+                          type="button"
+                          onClick={() => startEditing(program)}
+                          className="rounded-lg border border-teal-200 bg-white px-3 py-1.5 text-sm font-medium text-teal-700 hover:bg-teal-50"
+                        >
+                          ✎ Programm bearbeiten
+                        </button>
+                      )}
                       {isConfirmingRenew ? (
                         <>
                           <span className="text-sm font-medium text-teal-700">
@@ -338,18 +429,158 @@ export default function Programs() {
                 </div>
 
                 {isExpanded && (
-                  <div className="border-t border-slate-100 bg-slate-50 px-5 py-3">
-                    {assignedExercises.length === 0 ? (
+                  <div className="border-t border-slate-100 bg-slate-50 px-5 py-4">
+                    {isEditing ? (
+                      <div>
+                        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <h3 className="font-semibold text-slate-800">
+                              Übungen bearbeiten
+                            </h3>
+                            <p className="text-xs text-slate-500">
+                              Übungen auswählen und die Reihenfolge mit ↑ und ↓ festlegen.
+                            </p>
+                          </div>
+                          <div className="text-sm font-medium text-teal-700">
+                            {editExerciseIds.length} ausgewählt
+                          </div>
+                        </div>
+
+                        {editExerciseIds.length > 0 && (
+                          <div className="mb-5 rounded-xl border border-teal-100 bg-white p-3">
+                            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                              Reihenfolge im Patientenprogramm
+                            </div>
+                            <ul className="space-y-2">
+                              {editExerciseIds.map((exerciseId, index) => {
+                                const exercise = exercises.find(
+                                  (item) => item.id === exerciseId,
+                                )
+                                if (!exercise) return null
+                                return (
+                                  <li
+                                    key={exerciseId}
+                                    className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2"
+                                  >
+                                    <span className="w-6 text-center text-xs font-semibold text-slate-400">
+                                      {index + 1}.
+                                    </span>
+                                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">
+                                      {exercise.title}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => moveEditExercise(exerciseId, -1)}
+                                      disabled={index === 0}
+                                      className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-30"
+                                      title="Nach oben"
+                                    >
+                                      ↑
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => moveEditExercise(exerciseId, 1)}
+                                      disabled={index === editExerciseIds.length - 1}
+                                      className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-30"
+                                      title="Nach unten"
+                                    >
+                                      ↓
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleEditExercise(exerciseId)}
+                                      className="rounded-lg px-2 py-1 text-sm text-red-500 hover:bg-red-50"
+                                      title="Aus Programm entfernen"
+                                    >
+                                      Entfernen
+                                    </button>
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          </div>
+                        )}
+
+                        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          Veröffentlichte Übungen hinzufügen / entfernen
+                        </div>
+                        {publishedExercises.length === 0 ? (
+                          <p className="rounded-xl bg-white p-3 text-sm text-slate-400">
+                            Keine veröffentlichten Online-Übungen vorhanden.
+                          </p>
+                        ) : (
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {publishedExercises.map((exercise) => {
+                              const selected = editExerciseIds.includes(exercise.id)
+                              return (
+                                <button
+                                  key={exercise.id}
+                                  type="button"
+                                  onClick={() => toggleEditExercise(exercise.id)}
+                                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
+                                    selected
+                                      ? "border-teal-300 bg-teal-50"
+                                      : "border-slate-200 bg-white hover:border-teal-200"
+                                  }`}
+                                >
+                                  <span
+                                    className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border text-xs ${
+                                      selected
+                                        ? "border-teal-600 bg-teal-600 text-white"
+                                        : "border-slate-300 bg-white"
+                                    }`}
+                                  >
+                                    {selected ? "✓" : ""}
+                                  </span>
+                                  <span className="min-w-0">
+                                    <span className="block truncate text-sm font-medium text-slate-800">
+                                      {exercise.title}
+                                    </span>
+                                    <span className="block text-xs text-slate-400">
+                                      {exercise.category}
+                                    </span>
+                                  </span>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
+
+                        <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4">
+                          <button
+                            type="button"
+                            onClick={cancelEditing}
+                            disabled={savingId === program.id}
+                            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                          >
+                            Abbrechen
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleSaveExercises(program)}
+                            disabled={savingId === program.id}
+                            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-60"
+                          >
+                            {savingId === program.id
+                              ? "Wird gespeichert …"
+                              : "Änderungen speichern"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : assignedExercises.length === 0 ? (
                       <p className="py-2 text-sm text-slate-400">
                         Keine Übungen mehr vorhanden.
                       </p>
                     ) : (
                       <ul className="space-y-2">
-                        {assignedExercises.map((exercise) => (
+                        {assignedExercises.map((exercise, index) => (
                           <li
                             key={exercise.id}
                             className="flex items-center gap-3"
                           >
+                            <span className="w-5 text-right text-xs font-medium text-slate-400">
+                              {index + 1}.
+                            </span>
                             {exercise.thumbnailUrl ? (
                               <img
                                 src={exercise.thumbnailUrl}

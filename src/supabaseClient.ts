@@ -362,6 +362,82 @@ export async function createOnlineProgram(
   })
 }
 
+export async function updateOnlineProgramExercises(
+  programId: string,
+  exerciseIds: string[],
+): Promise<void> {
+  if (!supabase) throw new Error("Supabase ist nicht eingerichtet.")
+
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError || !userData.user) throw new Error("Bitte erneut anmelden.")
+
+  const uniqueExerciseIds = [...new Set(exerciseIds)]
+
+  const { data: program, error: programError } = await supabase
+    .from("patient_programs")
+    .select("id")
+    .eq("id", programId)
+    .eq("owner_id", userData.user.id)
+    .maybeSingle()
+
+  if (programError) throw programError
+  if (!program) {
+    throw new Error(
+      "Das Programm wurde nicht gefunden oder darf nicht bearbeitet werden.",
+    )
+  }
+
+  if (uniqueExerciseIds.length > 0) {
+    const { data: allowedExercises, error: exerciseError } = await supabase
+      .from("exercises")
+      .select("id")
+      .eq("owner_id", userData.user.id)
+      .eq("is_published", true)
+      .in("id", uniqueExerciseIds)
+
+    if (exerciseError) throw exerciseError
+    if ((allowedExercises ?? []).length !== uniqueExerciseIds.length) {
+      throw new Error(
+        "Mindestens eine ausgewählte Übung ist nicht veröffentlicht oder nicht mehr vorhanden.",
+      )
+    }
+
+    const assignments = uniqueExerciseIds.map((exerciseId, index) => ({
+      program_id: programId,
+      exercise_id: exerciseId,
+      sort_order: index,
+    }))
+
+    const { error: upsertError } = await supabase
+      .from("program_exercises")
+      .upsert(assignments, { onConflict: "program_id,exercise_id" })
+
+    if (upsertError) throw upsertError
+  }
+
+  const { data: currentAssignments, error: currentError } = await supabase
+    .from("program_exercises")
+    .select("exercise_id")
+    .eq("program_id", programId)
+
+  if (currentError) throw currentError
+
+  const selected = new Set(uniqueExerciseIds)
+  const removedIds = (currentAssignments ?? [])
+    .map((assignment) => assignment.exercise_id as string)
+    .filter((exerciseId) => !selected.has(exerciseId))
+
+  if (removedIds.length > 0) {
+    const { error: deleteError } = await supabase
+      .from("program_exercises")
+      .delete()
+      .eq("program_id", programId)
+      .in("exercise_id", removedIds)
+
+    if (deleteError) throw deleteError
+  }
+}
+
 export async function renewOnlineProgram(
   id: string,
   currentExpiresAt: string,
