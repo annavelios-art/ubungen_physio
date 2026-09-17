@@ -38,6 +38,7 @@ export type Page =
   | "therapist/login"
   | "therapist/library"
   | "therapist/programs"
+  | "therapist/payments"
   | "therapist/new-exercise"
   | "legal/imprint"
   | "legal/privacy"
@@ -60,3 +61,18 @@ export const DEFAULT_CATEGORIES = [
   "Dehnung",
   "Atmung & Entspannung",
 ];
+
+export type PaymentMethod = "Überweisung" | "Bar" | "Sonstiges";
+export type PaymentStatus = "bezahlt" | "storniert";
+
+export interface Payment {
+  id: string;
+  programId?: string;
+  accessCode?: string;
+  paymentDate: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  status: PaymentStatus;
+  note?: string;
+  createdAt: string;
+}

@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import TherapistLayout from "./pages/therapist/TherapistLayout";
 import Library from "./pages/therapist/Library";
 import Programs from "./pages/therapist/Programs";
+import Payments from "./pages/therapist/Payments";
 import NewExercise from "./pages/therapist/NewExercise";
 import PatientAccess from "./pages/patient/PatientAccess";
 import PatientView from "./pages/patient/PatientView";
@@ -43,6 +44,7 @@ function AppContent() {
     if (
       (p === "therapist/library" ||
         p === "therapist/programs" ||
+        p === "therapist/payments" ||
         p === "therapist/new-exercise" ||
         (typeof p === "object" &&
           (p.type === "therapist/edit-exercise" || p.type === "therapist/edit-online-exercise"))) &&
@@ -104,6 +106,7 @@ function AppContent() {
   if (
     page === "therapist/library" ||
     page === "therapist/programs" ||
+    page === "therapist/payments" ||
     page === "therapist/new-exercise" ||
     (typeof page === "object" &&
       (page.type === "therapist/edit-exercise" || page.type === "therapist/edit-online-exercise"))
@@ -115,6 +118,7 @@ function AppContent() {
     const content = (() => {
       if (page === "therapist/library") return <Library navigate={navigate} />;
       if (page === "therapist/programs") return <Programs />;
+      if (page === "therapist/payments") return <Payments />;
       if (page === "therapist/new-exercise") return <NewExercise navigate={navigate} />;
       if (typeof page === "object" && page.type === "therapist/edit-exercise") {
         return <NewExercise navigate={navigate} editExerciseId={page.exerciseId} />;

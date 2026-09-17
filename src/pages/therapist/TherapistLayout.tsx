@@ -31,6 +31,15 @@ const NAV_ITEMS = [
     ),
   },
   {
+    id: "therapist/payments",
+    label: "Einnahmen",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m3-9.5c-.7-.8-1.7-1.2-3-1.2-1.7 0-3 .9-3 2.2 0 1.4 1.2 2 3.1 2.5 1.9.5 2.9 1.1 2.9 2.5 0 1.3-1.3 2.2-3 2.2-1.4 0-2.6-.5-3.4-1.4" />
+      </svg>
+    ),
+  },
+  {
     id: "therapist/new-exercise",
     label: "Neue Online-Übung",
     icon: (

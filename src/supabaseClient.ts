@@ -548,3 +548,111 @@ export async function fetchPatientProgramByCode(
     exercises: raw.exercises as Exercise[],
   }
 }
+
+interface PaymentRow {
+  id: string
+  program_id: string | null
+  payment_date: string
+  amount: number | string
+  payment_method: "Überweisung" | "Bar" | "Sonstiges"
+  status: "bezahlt" | "storniert"
+  note: string | null
+  created_at: string
+  patient_programs?: { access_code: string } | Array<{ access_code: string }> | null
+}
+
+function paymentAccessCode(row: PaymentRow): string | undefined {
+  const joined = row.patient_programs
+  if (!joined) return undefined
+  if (Array.isArray(joined)) return joined[0]?.access_code
+  return joined.access_code
+}
+
+function mapPaymentRow(row: PaymentRow): import("./types").Payment {
+  return {
+    id: row.id,
+    programId: row.program_id ?? undefined,
+    accessCode: paymentAccessCode(row),
+    paymentDate: row.payment_date,
+    amount: Number(row.amount),
+    paymentMethod: row.payment_method,
+    status: row.status,
+    note: row.note ?? undefined,
+    createdAt: row.created_at,
+  }
+}
+
+export async function fetchPayments(): Promise<import("./types").Payment[]> {
+  if (!supabase) throw new Error("Supabase ist nicht eingerichtet.")
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError || !userData.user) throw new Error("Bitte erneut anmelden.")
+
+  const { data, error } = await supabase
+    .from("payments")
+    .select("id, program_id, payment_date, amount, payment_method, status, note, created_at, patient_programs(access_code)")
+    .order("payment_date", { ascending: false })
+    .order("created_at", { ascending: false })
+  if (error) throw error
+  return ((data ?? []) as unknown as PaymentRow[]).map(mapPaymentRow)
+}
+
+export async function createPayment(input: {
+  programId?: string
+  paymentDate: string
+  amount: number
+  paymentMethod: import("./types").PaymentMethod
+  note?: string
+}): Promise<import("./types").Payment> {
+  if (!supabase) throw new Error("Supabase ist nicht eingerichtet.")
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError || !userData.user) throw new Error("Bitte erneut anmelden.")
+
+  if (input.programId) {
+    const { data: program, error: programError } = await supabase
+      .from("patient_programs")
+      .select("id")
+      .eq("id", input.programId)
+      .eq("owner_id", userData.user.id)
+      .maybeSingle()
+    if (programError) throw programError
+    if (!program) throw new Error("Das ausgewählte Programm wurde nicht gefunden.")
+  }
+
+  const { data, error } = await supabase
+    .from("payments")
+    .insert({
+      program_id: input.programId ?? null,
+      payment_date: input.paymentDate,
+      amount: input.amount,
+      payment_method: input.paymentMethod,
+      status: "bezahlt",
+      note: input.note?.trim() || null,
+    })
+    .select("id, program_id, payment_date, amount, payment_method, status, note, created_at, patient_programs(access_code)")
+    .single()
+  if (error) throw error
+  return mapPaymentRow(data as unknown as PaymentRow)
+}
+
+export async function updatePayment(
+  id: string,
+  input: { paymentDate: string; amount: number; paymentMethod: import("./types").PaymentMethod; note?: string },
+): Promise<void> {
+  if (!supabase) throw new Error("Supabase ist nicht eingerichtet.")
+  const { error } = await supabase
+    .from("payments")
+    .update({
+      payment_date: input.paymentDate,
+      amount: input.amount,
+      payment_method: input.paymentMethod,
+      note: input.note?.trim() || null,
+    })
+    .eq("id", id)
+  if (error) throw error
+}
+
+export async function cancelPayment(id: string): Promise<void> {
+  if (!supabase) throw new Error("Supabase ist nicht eingerichtet.")
+  const { error } = await supabase.from("payments").update({ status: "storniert" }).eq("id", id)
+  if (error) throw error
+}
