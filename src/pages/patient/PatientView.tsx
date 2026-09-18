@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Exercise, Page, PatientProgram } from "../../types";
 import LegalLinks from "../../components/LegalLinks";
+import { clearPatientSession } from "../../patientSession";
 
 interface Props {
   code: string;
@@ -177,7 +178,10 @@ export default function PatientView({ code, program, navigate }: Props) {
             <div className="text-xs text-slate-400 font-mono">{code}</div>
           </div>
           <button
-            onClick={() => navigate("patient/access")}
+            onClick={() => {
+              clearPatientSession();
+              navigate("patient/access");
+            }}
             className="text-sm text-slate-500 hover:text-slate-700 transition-colors flex items-center gap-1"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

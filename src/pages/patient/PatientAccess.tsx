@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchPatientProgramByCode } from "../../supabaseClient";
 import type { Page } from "../../types";
 import LegalLinks from "../../components/LegalLinks";
+import { clearPatientSession, loadPatientSession, savePatientSession } from "../../patientSession";
 
 interface Props {
   navigate: (page: Page) => void;
@@ -12,6 +13,41 @@ export default function PatientAccess({ navigate, onBack }: Props) {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
+  const [restoring, setRestoring] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const restore = async () => {
+      const saved = loadPatientSession();
+      if (!saved) {
+        if (!cancelled) setRestoring(false);
+        return;
+      }
+
+      try {
+        const program = await fetchPatientProgramByCode(saved.code);
+        if (cancelled) return;
+
+        if (program) {
+          navigate({ type: "patient/view", code: saved.code, program });
+          return;
+        }
+
+        clearPatientSession();
+      } catch {
+        // Bei einem vorübergehenden Verbindungsfehler bleibt die Sitzung erhalten.
+      }
+
+      if (!cancelled) setRestoring(false);
+    };
+
+    void restore();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
 
   const formatCode = (value: string) => {
     const normalized = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -40,6 +76,7 @@ export default function PatientAccess({ navigate, onBack }: Props) {
         setError("Dieser Code ist ungültig oder nicht mehr aktiv. Bitte prüfen Sie Ihre Eingabe.");
         return;
       }
+      savePatientSession(code);
       navigate({ type: "patient/view", code, program });
     } catch {
       setError("Das Programm konnte gerade nicht geladen werden. Bitte versuchen Sie es erneut.");
@@ -47,6 +84,17 @@ export default function PatientAccess({ navigate, onBack }: Props) {
       setChecking(false);
     }
   };
+
+  if (restoring) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 flex items-center justify-center px-4">
+        <div className="text-center text-slate-500">
+          <div className="text-lg font-medium text-teal-900 mb-2">Übungsprogramm wird geladen …</div>
+          <div className="text-sm">Gespeicherte Anmeldung wird geprüft.</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 flex flex-col items-center justify-center px-4 py-24">
