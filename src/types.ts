@@ -23,6 +23,7 @@ export interface Program {
   exerciseIds: string[];
   createdAt: string;
   expiresAt?: string;
+  firstAccessedAt?: string;
   isActive?: boolean;
   isOnline?: boolean;
 }

@@ -256,7 +256,8 @@ export function exerciseMediaPathFromUrl(url: string): string | null {
 interface PatientProgramRow {
   id: string
   access_code: string
-  expires_at: string
+  expires_at: string | null
+  first_accessed_at: string | null
   is_active: boolean
   created_at: string
   program_exercises?: Array<{
@@ -275,7 +276,8 @@ function mapPatientProgramRow(row: PatientProgramRow): Program {
     accessCode: row.access_code,
     exerciseIds: assignments.map((assignment) => assignment.exercise_id),
     createdAt: row.created_at,
-    expiresAt: row.expires_at,
+    expiresAt: row.expires_at ?? undefined,
+    firstAccessedAt: row.first_accessed_at ?? undefined,
     isActive: row.is_active,
     isOnline: true,
   }
@@ -329,10 +331,10 @@ export async function createOnlineProgram(
     .from("patient_programs")
     .insert({
       owner_id: userData.user.id,
-      expires_at: addCalendarMonths(new Date(), 6).toISOString(),
+      expires_at: null,
       is_active: true,
     })
-    .select("id, access_code, expires_at, is_active, created_at")
+    .select("id, access_code, expires_at, first_accessed_at, is_active, created_at")
     .single()
 
   if (programError) throw programError
@@ -460,7 +462,8 @@ export async function renewOnlineProgram(
     .update({ expires_at: nextExpiry, is_active: true })
     .eq("id", id)
     .eq("owner_id", userData.user.id)
-    .select("id, access_code, expires_at, is_active, created_at")
+    .not("first_accessed_at", "is", null)
+    .select("id, access_code, expires_at, first_accessed_at, is_active, created_at")
     .maybeSingle()
 
   if (error) throw error
@@ -485,7 +488,7 @@ export async function fetchOnlinePrograms(): Promise<Program[]> {
   const { data, error } = await supabase
     .from("patient_programs")
     .select(
-      "id, access_code, expires_at, is_active, created_at, program_exercises(exercise_id, sort_order)",
+      "id, access_code, expires_at, first_accessed_at, is_active, created_at, program_exercises(exercise_id, sort_order)",
     )
     .eq("owner_id", userData.user.id)
     .order("created_at", { ascending: false })
@@ -521,7 +524,7 @@ export async function fetchPatientProgramByCode(
   if (!supabase)
     throw new Error("Die Online-Verbindung ist nicht eingerichtet.")
 
-  const { data, error } = await supabase.rpc("get_patient_program", {
+  const { data, error } = await supabase.rpc("get_patient_program_v2", {
     p_access_code: accessCode,
   })
 

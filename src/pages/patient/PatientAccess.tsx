@@ -30,6 +30,7 @@ export default function PatientAccess({ navigate, onBack }: Props) {
         if (cancelled) return;
 
         if (program) {
+          savePatientSession(saved.code, program.expiresAt);
           navigate({ type: "patient/view", code: saved.code, program });
           return;
         }
@@ -76,7 +77,7 @@ export default function PatientAccess({ navigate, onBack }: Props) {
         setError("Dieser Code ist ungültig oder nicht mehr aktiv. Bitte prüfen Sie Ihre Eingabe.");
         return;
       }
-      savePatientSession(code);
+      savePatientSession(code, program.expiresAt);
       navigate({ type: "patient/view", code, program });
     } catch {
       setError("Das Programm konnte gerade nicht geladen werden. Bitte versuchen Sie es erneut.");
@@ -120,6 +121,9 @@ export default function PatientAccess({ navigate, onBack }: Props) {
           </h1>
           <p className="text-slate-500 text-base leading-relaxed">
             Geben Sie den Zugangscode ein, den Sie von Ihrer Therapeutin oder Ihrem Therapeuten erhalten haben.
+          </p>
+          <p className="mt-3 text-sm text-teal-700">
+            Nach der ersten Anmeldung bleibt der Code auf diesem Gerät gespeichert.
           </p>
         </div>
 

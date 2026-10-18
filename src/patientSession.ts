@@ -1,33 +1,49 @@
-const STORAGE_KEY = "physiooptima_patient_session_v1";
-const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
+/**
+ * Der Zugangscode bleibt nur auf diesem Gerät gespeichert.
+ * Ob ein Programm (noch) gültig ist, entscheidet immer die Datenbank.
+ */
+const STORAGE_KEY = "physiooptima_patient_session_v2";
+const OLD_STORAGE_KEY = "physiooptima_patient_session_v1";
 
-interface StoredPatientSession {
+export interface StoredPatientSession {
   code: string;
   validUntil: number;
 }
 
-export function savePatientSession(code: string) {
-  const session: StoredPatientSession = {
-    code,
-    validUntil: Date.now() + SESSION_MS,
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+export function savePatientSession(code: string, expiresAt: string): void {
+  const validUntil = new Date(expiresAt).getTime();
+  if (!code.trim() || !Number.isFinite(validUntil) || validUntil <= Date.now()) {
+    return;
+  }
+
+  const session: StoredPatientSession = { code: code.trim(), validUntil };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+    localStorage.removeItem(OLD_STORAGE_KEY);
+  } catch {
+    // Private Browsing kann das Speichern untersagen. Der aktuelle Zugang klappt trotzdem.
+  }
 }
 
 export function loadPatientSession(): StoredPatientSession | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    // Bereits gespeicherte 7-Tage-Anmeldungen dürfen übernommen werden.
+    const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(OLD_STORAGE_KEY);
     if (!raw) return null;
 
     const session = JSON.parse(raw) as Partial<StoredPatientSession>;
     if (
       typeof session.code !== "string" ||
+      !session.code.trim() ||
       typeof session.validUntil !== "number" ||
-      session.validUntil <= Date.now()
+      !Number.isFinite(session.validUntil)
     ) {
       clearPatientSession();
       return null;
     }
+
+    // Auch nach lokaler Frist prüfen wir beim Server: Das Programm könnte verlängert sein.
+    // Der lokale Code allein gewährt niemals Zugang zu Übungen.
     return session as StoredPatientSession;
   } catch {
     clearPatientSession();
@@ -35,6 +51,11 @@ export function loadPatientSession(): StoredPatientSession | null {
   }
 }
 
-export function clearPatientSession() {
-  localStorage.removeItem(STORAGE_KEY);
+export function clearPatientSession(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(OLD_STORAGE_KEY);
+  } catch {
+    // Kein LocalStorage verfügbar.
+  }
 }

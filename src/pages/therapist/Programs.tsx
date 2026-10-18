@@ -248,8 +248,9 @@ export default function Programs() {
             const assignedExercises = getExercises(program)
             const isExpanded = expandedId === program.id
             const isConfirmingDelete = confirmDeleteId === program.id
+            const hasStarted = Boolean(program.firstAccessedAt)
             const isExpired = Boolean(
-              program.expiresAt && new Date(program.expiresAt) < new Date(),
+              hasStarted && program.expiresAt && new Date(program.expiresAt) <= new Date(),
             )
             const isConfirmingRenew = confirmRenewId === program.id
             const isEditing = editingId === program.id
@@ -276,19 +277,28 @@ export default function Programs() {
                               : "bg-slate-100 text-slate-500"
                           }`}
                         >
-                          {isExpired
-                            ? "abgelaufen"
-                            : program.isActive
-                              ? "aktiv"
-                              : "inaktiv"}
+                          {!program.isActive
+                            ? "inaktiv"
+                            : isExpired
+                              ? "abgelaufen"
+                              : hasStarted
+                                ? "aktiv"
+                                : "wartet auf Anmeldung"}
                         </span>
                       </div>
                       <div className="mt-1 text-sm text-slate-500">
                         Erstellt: {formatDate(program.createdAt)}
-                        {program.expiresAt &&
+                        {hasStarted && program.firstAccessedAt &&
+                          ` · erstmals geöffnet: ${formatDate(program.firstAccessedAt)}`}
+                        {hasStarted && program.expiresAt &&
                           ` · gültig bis ${formatDate(program.expiresAt)}`}
                       </div>
-                      {program.expiresAt && !isExpired && (
+                      {!hasStarted && program.isActive && (
+                        <div className="mt-1 text-xs font-medium text-teal-700">
+                          Die 6 Monate beginnen mit der ersten Anmeldung des Patienten.
+                        </div>
+                      )}
+                      {hasStarted && program.expiresAt && !isExpired && (
                         <div className="mt-1 text-xs font-medium text-teal-700">
                           Noch {remainingDays(program.expiresAt)} Tage gültig
                         </div>
@@ -351,7 +361,7 @@ export default function Programs() {
                           ✎ Programm bearbeiten
                         </button>
                       )}
-                      {isConfirmingRenew ? (
+                      {!hasStarted ? null : isConfirmingRenew ? (
                         <>
                           <span className="text-sm font-medium text-teal-700">
                             24 € erhalten?
